@@ -1,13 +1,15 @@
 import logging
 
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
+from slowapi.errors import RateLimitExceeded
 
 from app import crud, web, auth_routes
 from app.auth import get_current_user
 from app.config import settings
 from app.database import get_db
+from app.limiter import limiter
 from app.schemas import DocumentoCreate, DocumentoOut, DocumentoVincularRespuesta
 from app.business_logic import calcular_estado
 
@@ -19,6 +21,20 @@ logging.basicConfig(
 )
 
 app = FastAPI(title="SGD-SINOLE", version="0.1.0")
+
+# Rate limiting por IP (en memoria, suficiente para esta escala).
+app.state.limiter = limiter
+
+
+@app.exception_handler(RateLimitExceeded)
+def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    """Se excedió el límite de intentos en /login: mismo formulario, mensaje claro."""
+    return auth_routes.templates.TemplateResponse(
+        request=request,
+        name="login.html",
+        context={"error": "Demasiados intentos. Espere un momento e intente de nuevo."},
+        status_code=429,
+    )
 
 # Middleware de sesión (usa itsdangerous + SECRET_KEY del .env)
 app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)

@@ -22,6 +22,7 @@ from app.auth import (
 )
 from app.config import settings
 from app.database import get_db
+from app.limiter import limiter
 from app.models import Usuario
 
 router = APIRouter()
@@ -38,6 +39,7 @@ def login_form(request: Request, error: str | None = None):
 
 
 @router.post("/login")
+@limiter.limit("5/minute")
 def login_submit(
     request: Request,
     response: Response,
