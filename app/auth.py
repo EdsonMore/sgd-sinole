@@ -90,3 +90,11 @@ def es_rol(usuario: Usuario | None, *roles: str) -> bool:
     if usuario is None:
         return False
     return usuario.rol.value in roles
+
+
+def get_current_editor(user: Usuario = Depends(get_current_user)) -> Usuario:
+    """Obligatoria: exige sesión válida Y rol con permiso de escritura
+    (secretaria o admin). Lanza 403 si el usuario es 'consulta' (solo lectura)."""
+    if not es_rol(user, "secretaria", "admin"):
+        raise HTTPException(status_code=403, detail="No tiene permiso para esta acción")
+    return user

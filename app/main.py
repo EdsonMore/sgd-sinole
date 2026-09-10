@@ -6,7 +6,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from slowapi.errors import RateLimitExceeded
 
 from app import crud, web, auth_routes
-from app.auth import get_current_user
+from app.auth import get_current_user, get_current_editor
 from app.config import settings
 from app.database import get_db
 from app.limiter import limiter
@@ -70,7 +70,7 @@ def health():
 def registrar_documento(
     data: DocumentoCreate,
     db: Session = Depends(get_db),
-    user=Depends(get_current_user),
+    user=Depends(get_current_editor),
 ):
     doc = crud.crear_documento(db, data, usuario_id=user.id)
     return _a_documento_out(doc)
@@ -103,7 +103,7 @@ def vincular_respuesta(
     doc_id: int,
     data: DocumentoVincularRespuesta,
     db: Session = Depends(get_db),
-    user=Depends(get_current_user),
+    user=Depends(get_current_editor),
 ):
     doc = crud.vincular_respuesta(db, doc_id, data)
     if doc is None:
@@ -115,7 +115,7 @@ def vincular_respuesta(
 def generar_carta_reiterativa(
     doc_id: int,
     db: Session = Depends(get_db),
-    user=Depends(get_current_user),
+    user=Depends(get_current_editor),
 ):
     doc = crud.marcar_carta_reiterativa(db, doc_id)
     if doc is None:
