@@ -1,16 +1,30 @@
 import datetime
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models import Documento
 from app.schemas import DocumentoCreate, DocumentoVincularRespuesta
 
+DOCUMENTO_N_DOCUMENTO_CONSTRAINT = "uq_documentos_n_documento"
+
+
+class DocumentoDuplicado(Exception):
+    """Ya existe un documento con ese número (n_documento)."""
+
 
 def crear_documento(db: Session, data: DocumentoCreate, usuario_id: int | None = None) -> Documento:
     doc = Documento(**data.model_dump(), creado_por_id=usuario_id)
     db.add(doc)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        constraint = getattr(getattr(exc.orig, "diag", None), "constraint_name", None)
+        if constraint == DOCUMENTO_N_DOCUMENTO_CONSTRAINT:
+            raise DocumentoDuplicado(data.n_documento) from None
+        raise
     db.refresh(doc)
     return doc
 

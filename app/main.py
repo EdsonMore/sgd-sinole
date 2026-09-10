@@ -72,7 +72,10 @@ def registrar_documento(
     db: Session = Depends(get_db),
     user=Depends(get_current_editor),
 ):
-    doc = crud.crear_documento(db, data, usuario_id=user.id)
+    try:
+        doc = crud.crear_documento(db, data, usuario_id=user.id)
+    except crud.DocumentoDuplicado:
+        raise HTTPException(status_code=409, detail="Ya existe un documento con ese número")
     return _a_documento_out(doc)
 
 

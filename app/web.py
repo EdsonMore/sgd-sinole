@@ -148,6 +148,12 @@ def registrar_documento_form(
             requiere_respuesta=requiere_respuesta == "true",
         )
         crud.crear_documento(db, data, usuario_id=user.id)
+    except crud.DocumentoDuplicado:
+        return templates.TemplateResponse(
+            request, "registro.html",
+            {"hoy": fecha_envio, "error": "Ya existe un documento con ese número", "user": user},
+            status_code=400,
+        )
     except Exception:
         logger.exception(
             "Error al registrar documento (usuario_id=%s, entidad=%s, n_documento=%s)",
