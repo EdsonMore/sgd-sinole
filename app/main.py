@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
@@ -8,6 +10,13 @@ from app.config import settings
 from app.database import get_db
 from app.schemas import DocumentoCreate, DocumentoOut, DocumentoVincularRespuesta
 from app.business_logic import calcular_estado
+
+# Logging estructurado a stdout/stderr — Uvicorn lo captura en su consola.
+# Formato: fecha/hora, nivel, módulo de origen, mensaje.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
 
 app = FastAPI(title="SGD-SINOLE", version="0.1.0")
 

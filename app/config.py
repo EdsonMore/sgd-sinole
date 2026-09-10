@@ -8,7 +8,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     DATABASE_URL: str
-    SECRET_KEY: str = "dev-secret-key-cambiar"
+    SECRET_KEY: str
+
+    # Si la cookie de sesión debe llevar el atributo Secure (solo HTTPS).
+    # Fail-secure: si falta esta variable (ej. deploy mal configurado),
+    # el default es True. Solo se desactiva explícitamente en tu .env local
+    # (SECURE_COOKIES=false) cuando corres la app sin HTTPS.
+    SECURE_COOKIES: bool = True
 
     # Reglas de negocio configurables sin tocar código
     DIAS_HABILES_LIMITE: int = 5      # a partir de aquí un documento está "Vencido"

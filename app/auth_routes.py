@@ -20,6 +20,7 @@ from app.auth import (
     hash_password,
     verify_password,
 )
+from app.config import settings
 from app.database import get_db
 from app.models import Usuario
 
@@ -64,7 +65,7 @@ def login_submit(
         max_age=SESION_HORAS * 3600,
         httponly=True,
         samesite="lax",
-        secure=False,  # True solo en HTTPS (producción)
+        secure=settings.SECURE_COOKIES,  # False solo si SECURE_COOKIES=false en tu .env local
         path="/",
     )
     return response

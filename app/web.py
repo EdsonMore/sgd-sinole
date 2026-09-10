@@ -5,6 +5,7 @@ Protegidas por sesión: si no hay usuario, redirige a /login.
 La UI se adapta al rol: secretaria ve CRUD; consulta solo lectura.
 """
 import datetime
+import logging
 
 from fastapi import APIRouter, Depends, Request, Form
 from fastapi.responses import RedirectResponse
@@ -19,6 +20,8 @@ from app.business_logic import calcular_estado, EstadoDocumento
 router = APIRouter()
 
 templates = Jinja2Templates(directory="app/templates")
+
+logger = logging.getLogger(__name__)
 
 
 # Mapa estado -> etiqueta legible para la secretaria
@@ -145,10 +148,14 @@ def registrar_documento_form(
             requiere_respuesta=requiere_respuesta == "true",
         )
         crud.crear_documento(db, data, usuario_id=user.id)
-    except Exception as exc:
+    except Exception:
+        logger.exception(
+            "Error al registrar documento (usuario_id=%s, entidad=%s, n_documento=%s)",
+            user.id, entidad, n_documento,
+        )
         return templates.TemplateResponse(
             request, "registro.html",
-            {"hoy": fecha_envio, "error": f"Error al guardar: {exc}", "user": user},
+            {"hoy": fecha_envio, "error": "Error al guardar. Intente nuevamente o contacte al administrador.", "user": user},
             status_code=400,
         )
     return RedirectResponse(url="/", status_code=303)
@@ -206,10 +213,14 @@ def vincular_respuesta_form(
             responde=responde,
         )
         crud.vincular_respuesta(db, doc_id, data)
-    except Exception as exc:
+    except Exception:
+        logger.exception(
+            "Error al vincular respuesta (usuario_id=%s, doc_id=%s)",
+            user.id, doc_id,
+        )
         return templates.TemplateResponse(
             request, "vincular.html",
-            {"doc": doc, "hoy": fecha_recepcion, "error": f"Error al guardar: {exc}", "user": user},
+            {"doc": doc, "hoy": fecha_recepcion, "error": "Error al guardar. Intente nuevamente o contacte al administrador.", "user": user},
             status_code=400,
         )
     return RedirectResponse(url="/", status_code=303)
