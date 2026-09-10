@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Panel semáforo - SGD-SINOLE{% endblock %}
+{% block content %}
+
+<h1 class="mb-3">Control de correspondencia</h1>
+
+<div class="row mb-4 g-3">
+  <div class="col">
+    <div class="card text-white text-center" style="background:#198754">
+      <div class="card-body">
+        <h5 class="card-title">{{ conteo.en_plazo }}</h5>
+        <div>En plazo</div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card text-white text-center" style="background:#fd7e14">
+      <div class="card-body">
+        <h5 class="card-title">{{ conteo.por_vencer }}</h5>
+        <div>Por vencer</div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card text-white text-center" style="background:#dc3545">
+      <div class="card-body">
+        <h5 class="card-title">{{ conteo.vencido }}</h5>
+        <div>Vencidos</div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card text-white text-center" style="background:#6c757d">
+      <div class="card-body">
+        <h5 class="card-title">{{ conteo.cerrado }}</h5>
+        <div>Cerrados</div>
+      </div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="card text-white text-center" style="background:#adb5bd">
+      <div class="card-body">
+        <h5 class="card-title">{{ conteo.no_aplica }}</h5>
+        <div>Sin respuesta requerida</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<form method="get" action="{{ url_for('panel') }}" class="row g-2 mb-3">
+  <div class="col-auto">
+    <select name="entidad" class="form-select">
+      <option value="">Todas las entidades</option>
+      <option value="SINOLE" {% if entidad == "SINOLE" %}selected{% endif %}>SINOLE</option>
+      <option value="FEDUNPE" {% if entidad == "FEDUNPE" %}selected{% endif %}>FEDUNPE</option>
+    </select>
+  </div>
+  <div class="col-auto">
+    <button type="submit" class="btn btn-primary">Filtrar</button>
+  </div>
+  <div class="col-auto ms-auto">
+    {% if puede_crear %}
+    <a href="{{ url_for('formulario_registro') }}" class="btn btn-success">+ Registrar documento</a>
+    {% endif %}
+  </div>
+</form>
+
+{% if documentos %}
+<div class="table-responsive">
+  <table class="table table-hover align-middle bg-white">
+    <thead class="table-light">
+      <tr>
+        <th>N° Documento</th>
+        <th>Fecha envío</th>
+        <th>Asunto</th>
+        <th>Destinatario</th>
+        <th>Entidad</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in documentos %}
+      <tr>
+        <td>{{ d.n_documento }}</td>
+        <td>{{ d.fecha_envio }}</td>
+        <td>{{ d.asunto }}</td>
+        <td>{{ d.destinatario }}</td>
+        <td>{{ d.entidad.value }}</td>
+        <td>
+          <span class="badge badge-estado sem-{{ d.estado.value|lower }}">{{ d.estado_label }}</span>
+        </td>
+        <td>
+          {% if not d.fecha_recepcion %}
+          <a href="{{ url_for('formulario_vincular', doc_id=d.id) }}" class="btn btn-sm btn-outline-primary">Vincular respuesta</a>
+          {% else %}
+          <span class="text-muted small">Respuesta: {{ d.n_documento_respuesta or '—' }}</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="alert alert-info">Aún no hay documentos registrados.</div>
+{% endif %}
+
+{% endblock %}

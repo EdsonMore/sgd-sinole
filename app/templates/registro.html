@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Registrar documento - SGD-SINOLE{% endblock %}
+{% block content %}
+
+<h1 class="mb-3">Registrar documento enviado</h1>
+
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
+<form method="post" action="{{ url_for('registrar_documento_form') }}" class="bg-white p-4 rounded shadow-sm">
+  <div class="row g-3">
+    <div class="col-md-4">
+      <label class="form-label">Entidad *</label>
+      <select name="entidad" class="form-select" required>
+        <option value="SINOLE">SINOLE</option>
+        <option value="FEDUNPE">FEDUNPE</option>
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Fecha de envío *</label>
+      <input type="date" name="fecha_envio" class="form-control" required value="{{ hoy }}">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">N° Documento *</label>
+      <input type="text" name="n_documento" class="form-control" placeholder="SINOLE N° 075-2026" required>
+    </div>
+    <div class="col-12">
+      <label class="form-label">Asunto *</label>
+      <input type="text" name="asunto" class="form-control" required>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Destinatario *</label>
+      <input type="text" name="destinatario" class="form-control" placeholder="Luis del Aguila - RRHH" required>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">CC</label>
+      <input type="text" name="cc" class="form-control">
+    </div>
+    <div class="col-12">
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="requiere_respuesta" id="requiere_respuesta" value="true">
+        <label class="form-check-label" for="requiere_respuesta">Requiere respuesta (seguimiento de plazo)</label>
+      </div>
+    </div>
+    <div class="col-12">
+      <button type="submit" class="btn btn-primary">Guardar</button>
+      <a href="{{ url_for('panel') }}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+  </div>
+</form>
+
+{% endblock %}

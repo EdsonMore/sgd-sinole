@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Vincular respuesta - SGD-SINOLE{% endblock %}
+{% block content %}
+
+<h1 class="mb-3">Vincular respuesta</h1>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="card-title">{{ doc.n_documento }}</h5>
+    <p class="mb-1"><strong>Asunto:</strong> {{ doc.asunto }}</p>
+    <p class="mb-1"><strong>Destinatario:</strong> {{ doc.destinatario }}</p>
+    <p class="mb-0 text-muted small">Enviado el {{ doc.fecha_envio }}</p>
+  </div>
+</div>
+
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
+<form method="post" action="{{ url_for('vincular_respuesta_form', doc_id=doc.id) }}" class="bg-white p-4 rounded shadow-sm">
+  <div class="row g-3">
+    <div class="col-md-4">
+      <label class="form-label">Fecha de recepción *</label>
+      <input type="date" name="fecha_recepcion" class="form-control" required value="{{ hoy }}">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">N° Documento respuesta *</label>
+      <input type="text" name="n_documento_respuesta" class="form-control" required>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Responde (quién) *</label>
+      <input type="text" name="responde" class="form-control" required>
+    </div>
+    <div class="col-12">
+      <label class="form-label">Asunto de la respuesta *</label>
+      <input type="text" name="asunto_respuesta" class="form-control" required>
+    </div>
+    <div class="col-12">
+      <button type="submit" class="btn btn-primary">Guardar y cerrar expediente</button>
+      <a href="{{ url_for('panel') }}" class="btn btn-outline-secondary">Cancelar</a>
+    </div>
+  </div>
+</form>
+
+{% endblock %}
