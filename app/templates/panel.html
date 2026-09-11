@@ -91,7 +91,7 @@
           <span class="badge badge-estado sem-{{ d.estado.value|lower }}">{{ d.estado_label }}</span>
         </td>
         <td>
-          {% if not d.fecha_recepcion %}
+          {% if not d.fecha_recepcion and d.requiere_respuesta %}
           <a href="{{ url_for('formulario_vincular', doc_id=d.id) }}" class="btn btn-sm btn-outline-primary">Vincular respuesta</a>
           {% else %}
           <span class="text-muted small">Respuesta: {{ d.n_documento_respuesta or '—' }}</span>

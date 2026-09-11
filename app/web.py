@@ -191,6 +191,8 @@ def formulario_vincular(
     doc = crud.obtener_documento(db, doc_id)
     if doc is None:
         return RedirectResponse(url="/", status_code=303)
+    if not doc.requiere_respuesta:
+        return RedirectResponse(url="/", status_code=303)
     return templates.TemplateResponse(
         request, "vincular.html",
         {"doc": doc, "hoy": datetime.date.today().isoformat(), "user": user},
@@ -227,6 +229,12 @@ def vincular_respuesta_form(
             responde=responde,
         )
         crud.vincular_respuesta(db, doc_id, data)
+    except crud.DocumentoNoRequiereRespuesta:
+        return templates.TemplateResponse(
+            request, "vincular.html",
+            {"doc": doc, "hoy": fecha_recepcion, "error": "Este documento no requiere respuesta", "user": user},
+            status_code=409,
+        )
     except crud.FechaRecepcionInvalida:
         return templates.TemplateResponse(
             request, "vincular.html",

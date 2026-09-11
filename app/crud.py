@@ -18,6 +18,10 @@ class FechaRecepcionInvalida(Exception):
     """La fecha de recepción es anterior a la fecha de envío del documento."""
 
 
+class DocumentoNoRequiereRespuesta(Exception):
+    """El documento fue registrado con requiere_respuesta=False; no se le puede vincular una respuesta."""
+
+
 def crear_documento(db: Session, data: DocumentoCreate, usuario_id: int | None = None) -> Documento:
     doc = Documento(**data.model_dump(), creado_por_id=usuario_id)
     db.add(doc)
@@ -48,6 +52,8 @@ def vincular_respuesta(db: Session, doc_id: int, data: DocumentoVincularRespuest
     doc = db.get(Documento, doc_id)
     if doc is None:
         return None
+    if not doc.requiere_respuesta:
+        raise DocumentoNoRequiereRespuesta(doc_id)
     if data.fecha_recepcion < doc.fecha_envio:
         raise FechaRecepcionInvalida(data.fecha_recepcion)
     for campo, valor in data.model_dump().items():
