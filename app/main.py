@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
@@ -8,7 +9,7 @@ from slowapi.errors import RateLimitExceeded
 from app import crud, web, auth_routes
 from app.auth import get_current_user, get_current_editor
 from app.config import settings
-from app.database import get_db
+from app.database import get_db, engine
 from app.limiter import limiter
 from app.schemas import DocumentoCreate, DocumentoOut, DocumentoVincularRespuesta
 from app.business_logic import calcular_estado
@@ -20,10 +21,49 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
 
-app = FastAPI(title="SGD-SINOLE", version="0.1.0")
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    # Graceful shutdown: Uvicorn llama esto al recibir SIGTERM/SIGINT,
+    # después de esperar a que terminen las requests en curso.
+    logger.info("Apagando: cerrando conexiones de base de datos...")
+    engine.dispose()
+
+
+app = FastAPI(title="SGD-SINOLE", version="0.1.0", lifespan=lifespan)
 
 # Rate limiting por IP (en memoria, suficiente para esta escala).
 app.state.limiter = limiter
+
+
+@app.middleware("http")
+async def security_headers_middleware(request: Request, call_next):
+    """Agrega headers de seguridad a toda respuesta. Único async def del
+    proyecto: lo exige el decorador @app.middleware("http") de Starlette,
+    que necesita hacer `await call_next(request)`."""
+    response = await call_next(request)
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=()"
+    # 'unsafe-inline' es necesario para el <script> inline de login.html
+    # (auto-focus del email) y los <style> inline de base.html/panel.html.
+    # Migrar a nonces por request queda como mejora futura.
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; "
+        "style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; "
+        "img-src 'self' data:; "
+        "connect-src 'self'; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'; "
+        "object-src 'none'"
+    )
+    return response
 
 
 @app.exception_handler(RateLimitExceeded)
