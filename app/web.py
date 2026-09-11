@@ -193,6 +193,8 @@ def formulario_vincular(
         return RedirectResponse(url="/", status_code=303)
     if not doc.requiere_respuesta:
         return RedirectResponse(url="/", status_code=303)
+    if doc.esta_cerrado:
+        return RedirectResponse(url="/", status_code=303)
     return templates.TemplateResponse(
         request, "vincular.html",
         {"doc": doc, "hoy": datetime.date.today().isoformat(), "user": user},
@@ -233,6 +235,12 @@ def vincular_respuesta_form(
         return templates.TemplateResponse(
             request, "vincular.html",
             {"doc": doc, "hoy": fecha_recepcion, "error": "Este documento no requiere respuesta", "user": user},
+            status_code=409,
+        )
+    except crud.DocumentoYaCerrado:
+        return templates.TemplateResponse(
+            request, "vincular.html",
+            {"doc": doc, "hoy": fecha_recepcion, "error": "Este documento ya tiene una respuesta vinculada", "user": user},
             status_code=409,
         )
     except crud.FechaRecepcionInvalida:

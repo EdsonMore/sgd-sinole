@@ -112,6 +112,8 @@ def vincular_respuesta(
         doc = crud.vincular_respuesta(db, doc_id, data)
     except crud.DocumentoNoRequiereRespuesta:
         raise HTTPException(status_code=409, detail="Este documento no requiere respuesta")
+    except crud.DocumentoYaCerrado:
+        raise HTTPException(status_code=409, detail="Este documento ya tiene una respuesta vinculada")
     except crud.FechaRecepcionInvalida:
         raise HTTPException(status_code=422, detail="La fecha de recepción no puede ser anterior a la fecha de envío")
     if doc is None:
