@@ -50,3 +50,13 @@ class DocumentoOut(BaseModel):
     asunto_respuesta: str | None
     responde: str | None
     estado: EstadoDocumento
+
+
+class DocumentoAlerta(BaseModel):
+    """Resumen mínimo de un documento VENCIDO/POR_VENCER, para las notificaciones de escritorio."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    n_documento: str
+    entidad: EntidadEnum
+    estado: EstadoDocumento

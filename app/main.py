@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
+from starlette.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 
 from app import crud, web, auth_routes
@@ -11,8 +12,8 @@ from app.auth import get_current_user, get_current_editor
 from app.config import settings
 from app.database import get_db, engine
 from app.limiter import limiter
-from app.schemas import DocumentoCreate, DocumentoOut, DocumentoVincularRespuesta
-from app.business_logic import calcular_estado
+from app.schemas import DocumentoCreate, DocumentoOut, DocumentoVincularRespuesta, DocumentoAlerta
+from app.business_logic import calcular_estado, EstadoDocumento
 
 # Logging estructurado a stdout/stderr — Uvicorn lo captura en su consola.
 # Formato: fecha/hora, nivel, módulo de origen, mensaje.
@@ -34,6 +35,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="SGD-SINOLE", version="0.1.0", lifespan=lifespan)
+
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Rate limiting por IP (en memoria, suficiente para esta escala).
 app.state.limiter = limiter
@@ -127,6 +130,25 @@ def listar_documentos(
 ):
     docs = crud.listar_documentos(db, entidad)
     return [_a_documento_out(d) for d in docs]
+
+
+@app.get("/alertas", response_model=list[DocumentoAlerta])
+def listar_alertas(
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Documentos en VENCIDO o POR_VENCER, para el polling de notificaciones del panel."""
+    docs = crud.listar_documentos(db)
+    alertas = []
+    for doc in docs:
+        estado = calcular_estado(
+            requiere_respuesta=doc.requiere_respuesta,
+            fecha_envio=doc.fecha_envio,
+            fecha_recepcion=doc.fecha_recepcion,
+        )
+        if estado in (EstadoDocumento.VENCIDO, EstadoDocumento.POR_VENCER):
+            alertas.append(DocumentoAlerta.model_validate({**doc.__dict__, "estado": estado}))
+    return alertas
 
 
 @app.get("/documentos/{doc_id}", response_model=DocumentoOut)

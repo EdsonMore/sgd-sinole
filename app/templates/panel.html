@@ -58,12 +58,16 @@
   <div class="col-auto">
     <button type="submit" class="btn btn-primary">Filtrar</button>
   </div>
-  <div class="col-auto ms-auto">
+  <div class="col-auto ms-auto d-flex align-items-center gap-2">
+    <button id="btn-activar-alertas" type="button" class="btn btn-warning btn-sm">Activar alertas</button>
+    <span class="text-muted small">Activa las alertas para recibir notificaciones de escritorio</span>
     {% if puede_crear %}
     <a href="{{ url_for('formulario_registro') }}" class="btn btn-success">+ Registrar documento</a>
     {% endif %}
   </div>
 </form>
+
+<div id="alertas-mensaje" class="alert alert-warning small d-none" role="alert"></div>
 
 {% if documentos %}
 <div class="table-responsive">
@@ -115,4 +119,7 @@
 <div class="alert alert-info">Aún no hay documentos registrados.</div>
 {% endif %}
 
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', path='alertas.js') }}"></script>
 {% endblock %}
