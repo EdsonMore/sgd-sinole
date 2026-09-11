@@ -260,3 +260,28 @@ def vincular_respuesta_form(
             status_code=400,
         )
     return RedirectResponse(url="/", status_code=303)
+
+
+@router.post("/documentos/{doc_id}/marcar-carta-reiterativa", name="carta_reiterativa_form")
+def carta_reiterativa_form(
+    request: Request,
+    doc_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user_optional),
+):
+    redirect = _require_user(request, user)
+    if redirect:
+        return redirect
+    if not es_rol(user, "secretaria", "admin"):
+        return RedirectResponse(url="/", status_code=303)
+
+    try:
+        crud.marcar_carta_reiterativa(db, doc_id)
+    except (
+        crud.DocumentoNoRequiereRespuesta,
+        crud.DocumentoYaCerrado,
+        crud.DocumentoNoVencido,
+        crud.CartaReiterativaYaEnviada,
+    ):
+        return RedirectResponse(url="/", status_code=303)
+    return RedirectResponse(url="/", status_code=303)

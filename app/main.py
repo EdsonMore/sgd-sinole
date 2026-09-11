@@ -127,7 +127,16 @@ def generar_carta_reiterativa(
     db: Session = Depends(get_db),
     user=Depends(get_current_editor),
 ):
-    doc = crud.marcar_carta_reiterativa(db, doc_id)
+    try:
+        doc = crud.marcar_carta_reiterativa(db, doc_id)
+    except crud.DocumentoNoRequiereRespuesta:
+        raise HTTPException(status_code=409, detail="Este documento no requiere respuesta")
+    except crud.DocumentoYaCerrado:
+        raise HTTPException(status_code=409, detail="Este documento ya tiene una respuesta vinculada")
+    except crud.DocumentoNoVencido:
+        raise HTTPException(status_code=409, detail="El documento no está vencido")
+    except crud.CartaReiterativaYaEnviada:
+        raise HTTPException(status_code=409, detail="Ya se envió una carta reiterativa a este documento")
     if doc is None:
         raise HTTPException(status_code=404, detail="Documento no encontrado")
     return _a_documento_out(doc)

@@ -96,6 +96,15 @@
           {% else %}
           <span class="text-muted small">Respuesta: {{ d.n_documento_respuesta or '—' }}</span>
           {% endif %}
+          {% if d.estado.value == "VENCIDO" %}
+            {% if not d.carta_reiterativa_enviada %}
+            <form method="post" action="{{ url_for('carta_reiterativa_form', doc_id=d.id) }}" class="d-inline">
+              <button type="submit" class="btn btn-sm btn-outline-danger">Carta reiterativa</button>
+            </form>
+            {% else %}
+            <span class="badge bg-secondary">Carta reiterativa enviada</span>
+            {% endif %}
+          {% endif %}
         </td>
       </tr>
       {% endfor %}

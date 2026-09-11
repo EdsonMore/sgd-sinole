@@ -18,6 +18,12 @@ class EstadoDocumento(str, enum.Enum):
     NO_APLICA = "NO_APLICA"      # requiere_respuesta = False
 
 
+MSG_NO_REQUIERE_RESPUESTA = "El documento no requiere respuesta"
+MSG_YA_CERRADO = "El documento ya está cerrado"
+MSG_NO_VENCIDO = "El documento no está vencido"
+MSG_CARTA_YA_ENVIADA = "Ya se envió una carta reiterativa a este documento"
+
+
 def contar_dias_habiles(fecha_inicio: datetime.date, fecha_fin: datetime.date) -> int:
     """
     Cuenta días hábiles (lunes a viernes) entre dos fechas, sin contar
@@ -62,3 +68,22 @@ def calcular_estado(
     if dias_transcurridos >= settings.DIAS_HABILES_ALERTA:
         return EstadoDocumento.POR_VENCER
     return EstadoDocumento.EN_PLAZO
+
+
+def validar_carta_reiterativa(
+    requiere_respuesta: bool,
+    fecha_envio: datetime.date,
+    fecha_recepcion: datetime.date | None,
+    carta_reiterativa_enviada: bool,
+    hoy: datetime.date | None = None,
+) -> None:
+    """Lanza ValueError si no se puede generar carta reiterativa para este documento."""
+    if not requiere_respuesta:
+        raise ValueError(MSG_NO_REQUIERE_RESPUESTA)
+    if fecha_recepcion is not None:
+        raise ValueError(MSG_YA_CERRADO)
+    estado = calcular_estado(requiere_respuesta, fecha_envio, fecha_recepcion, hoy)
+    if estado != EstadoDocumento.VENCIDO:
+        raise ValueError(MSG_NO_VENCIDO)
+    if carta_reiterativa_enviada:
+        raise ValueError(MSG_CARTA_YA_ENVIADA)

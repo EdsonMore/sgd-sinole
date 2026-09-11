@@ -6,6 +6,13 @@ from sqlalchemy.orm import Session
 
 from app.models import Documento
 from app.schemas import DocumentoCreate, DocumentoVincularRespuesta
+from app.business_logic import (
+    validar_carta_reiterativa,
+    MSG_NO_REQUIERE_RESPUESTA,
+    MSG_YA_CERRADO,
+    MSG_NO_VENCIDO,
+    MSG_CARTA_YA_ENVIADA,
+)
 
 DOCUMENTO_N_DOCUMENTO_CONSTRAINT = "uq_documentos_n_documento"
 
@@ -19,11 +26,27 @@ class FechaRecepcionInvalida(Exception):
 
 
 class DocumentoNoRequiereRespuesta(Exception):
-    """El documento fue registrado con requiere_respuesta=False; no se le puede vincular una respuesta."""
+    """El documento fue registrado con requiere_respuesta=False."""
 
 
 class DocumentoYaCerrado(Exception):
-    """El documento ya tiene una respuesta vinculada; no se puede vincular otra."""
+    """El documento ya tiene una respuesta vinculada."""
+
+
+class DocumentoNoVencido(Exception):
+    """El documento no está en estado VENCIDO; no aplica carta reiterativa."""
+
+
+class CartaReiterativaYaEnviada(Exception):
+    """Ya se envió una carta reiterativa a este documento."""
+
+
+_CARTA_REITERATIVA_EXCEPCIONES = {
+    MSG_NO_REQUIERE_RESPUESTA: DocumentoNoRequiereRespuesta,
+    MSG_YA_CERRADO: DocumentoYaCerrado,
+    MSG_NO_VENCIDO: DocumentoNoVencido,
+    MSG_CARTA_YA_ENVIADA: CartaReiterativaYaEnviada,
+}
 
 
 def crear_documento(db: Session, data: DocumentoCreate, usuario_id: int | None = None) -> Documento:
@@ -73,6 +96,18 @@ def marcar_carta_reiterativa(db: Session, doc_id: int) -> Documento | None:
     doc = db.get(Documento, doc_id)
     if doc is None:
         return None
+    try:
+        validar_carta_reiterativa(
+            requiere_respuesta=doc.requiere_respuesta,
+            fecha_envio=doc.fecha_envio,
+            fecha_recepcion=doc.fecha_recepcion,
+            carta_reiterativa_enviada=doc.carta_reiterativa_enviada,
+        )
+    except ValueError as exc:
+        excepcion = _CARTA_REITERATIVA_EXCEPCIONES.get(str(exc))
+        if excepcion is None:
+            raise
+        raise excepcion(doc_id) from None
     doc.carta_reiterativa_enviada = True
     db.commit()
     db.refresh(doc)
