@@ -108,7 +108,10 @@ def vincular_respuesta(
     db: Session = Depends(get_db),
     user=Depends(get_current_editor),
 ):
-    doc = crud.vincular_respuesta(db, doc_id, data)
+    try:
+        doc = crud.vincular_respuesta(db, doc_id, data)
+    except crud.FechaRecepcionInvalida:
+        raise HTTPException(status_code=422, detail="La fecha de recepción no puede ser anterior a la fecha de envío")
     if doc is None:
         raise HTTPException(status_code=404, detail="Documento no encontrado")
     return _a_documento_out(doc)

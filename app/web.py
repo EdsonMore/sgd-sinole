@@ -227,6 +227,12 @@ def vincular_respuesta_form(
             responde=responde,
         )
         crud.vincular_respuesta(db, doc_id, data)
+    except crud.FechaRecepcionInvalida:
+        return templates.TemplateResponse(
+            request, "vincular.html",
+            {"doc": doc, "hoy": fecha_recepcion, "error": "La fecha de recepción no puede ser anterior a la fecha de envío", "user": user},
+            status_code=422,
+        )
     except Exception:
         logger.exception(
             "Error al vincular respuesta (usuario_id=%s, doc_id=%s)",
