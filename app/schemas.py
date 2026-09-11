@@ -1,6 +1,6 @@
 import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from app.models import EntidadEnum
 from app.business_logic import EstadoDocumento
@@ -15,6 +15,13 @@ class DocumentoCreate(BaseModel):
     destinatario: str
     cc: str | None = None
     requiere_respuesta: bool = False
+
+    @field_validator("fecha_envio")
+    @classmethod
+    def fecha_envio_no_futura(cls, valor: datetime.date) -> datetime.date:
+        if valor > datetime.date.today():
+            raise ValueError("La fecha de envío no puede ser futura")
+        return valor
 
 
 class DocumentoVincularRespuesta(BaseModel):

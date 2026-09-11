@@ -10,6 +10,7 @@ import logging
 from fastapi import APIRouter, Depends, Request, Form
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
+from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from app import crud
@@ -148,6 +149,13 @@ def registrar_documento_form(
             requiere_respuesta=requiere_respuesta == "true",
         )
         crud.crear_documento(db, data, usuario_id=user.id)
+    except ValidationError as exc:
+        mensaje = exc.errors()[0]["msg"].removeprefix("Value error, ")
+        return templates.TemplateResponse(
+            request, "registro.html",
+            {"hoy": fecha_envio, "error": mensaje, "user": user},
+            status_code=400,
+        )
     except crud.DocumentoDuplicado:
         return templates.TemplateResponse(
             request, "registro.html",
