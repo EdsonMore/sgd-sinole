@@ -114,6 +114,83 @@ de hoy sin necesidad de un proceso aparte que lo actualice.
 6. **Tests con pytest** para `business_logic.py` — es la lógica más
    crítica y la más fácil de testear sin depender de la base de datos.
 
+## Backups automáticos
+
+El script `scripts/backup_bd.ps1` genera un backup diario de la base de
+datos con `pg_dump` (formato custom `-Fc`, permite restore selectivo).
+Detecta solo la instalación de `pg_dump.exe` automáticamente (PATH o
+`C:\Program Files\PostgreSQL\*\bin\`) y guarda el `.dump` en OneDrive si
+está activo en la PC (`%OneDrive%\SGD-Sinole-Backups\`), o si no en
+`C:\SGD-SINOLE-Backups\`. Mantiene los últimos 30 días (rotación
+automática).
+
+### Instalación en la PC de la secretaria (una sola vez)
+
+**1. Crear `.pgpass`** (así el script nunca necesita la contraseña):
+
+Abre el Bloc de notas, escribe una sola línea con el formato
+`host:puerto:basededatos:usuario:contraseña`, usando los mismos datos
+que tengas en tu `.env`:
+
+```
+localhost:5432:sgd_sinole:postgres:TU_CONTRASEÑA_REAL
+```
+
+Guárdalo como `%APPDATA%\postgresql\pgpass.conf` (crea la carpeta
+`postgresql` si no existe).
+
+**2. Probar el script a mano una vez:**
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\backup_bd.ps1
+```
+
+Debe aparecer un archivo `sgd_sinole_AAAA-MM-DD.dump` en la carpeta de
+backups, y una línea `OK: backup creado en ...` en `backup.log` dentro
+de esa misma carpeta.
+
+**3. Programar la tarea diaria** (una sola vez, a las 18:00):
+
+```powershell
+schtasks /create /tn "SGD-SINOLE Backup Diario" /tr "powershell.exe -ExecutionPolicy Bypass -File \"C:\ruta\al\proyecto\scripts\backup_bd.ps1\"" /sc daily /st 18:00 /ru "%USERNAME%" /it
+```
+
+`/ru "%USERNAME%" /it` hace que la tarea corra con la sesión de la propia
+secretaria (sin guardar su contraseña de Windows) — necesario para que
+`%OneDrive%` resuelva a su carpeta real. Ajusta la ruta del proyecto en
+`/tr` antes de correrlo.
+
+**4. Verificar que quedó creada:**
+
+```powershell
+schtasks /query /tn "SGD-SINOLE Backup Diario"
+schtasks /run /tn "SGD-SINOLE Backup Diario"   # corrida de prueba manual
+```
+
+### Cómo verificar que el backup se ejecutó
+
+Revisa `backup.log` en la carpeta de backups — cada corrida agrega una
+línea con fecha/hora y `OK` o `ERROR`. También puedes revisar el
+historial de la tarea en el Programador de tareas de Windows
+(clic derecho sobre la tarea → **Historial**).
+
+### Cómo restaurar un backup
+
+**Restauración manual, deliberada** (no hay script automático a
+propósito — un restore es una operación rara y peligrosa, no debería
+ser "un clic"):
+
+```powershell
+# 1. Crear una base nueva vacía (o usar una de prueba primero)
+createdb -h localhost -p 5432 -U postgres sgd_sinole_restaurado
+
+# 2. Restaurar el .dump ahí
+pg_restore -h localhost -p 5432 -U postgres -d sgd_sinole_restaurado sgd_sinole_2026-09-11.dump
+```
+
+Verifica los datos en la base restaurada antes de reemplazar la base
+real (`sgd_sinole`) con ellos.
+
 ## Notas de mantenimiento
 
 - Cualquier cambio a `app/models.py` requiere generar una nueva
